@@ -1,11 +1,14 @@
 package edu.syr.todo.controller;
 
 import edu.syr.todo.entities.ToDo;
+import edu.syr.todo.entities.User;
 import edu.syr.todo.repository.ToDoRepository;
+import edu.syr.todo.repository.UserRepository;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 @RestController
 @RequestMapping("/todo/api")
@@ -22,18 +27,34 @@ public class ToDoController {
     @Autowired
     private ToDoRepository toDoRepository;
 
-    @RequestMapping(value="", method = RequestMethod.POST)
-    public ResponseEntity<ToDo> create(@RequestBody ToDo todo) {
+    @Autowired
+    private UserRepository userRepository;
 
-        ToDo todoRepsonse = toDoRepository.save(todo);
+    @RequestMapping(value="", method = RequestMethod.POST)
+    public ResponseEntity<ToDo> create(@AuthenticationPrincipal User user, @RequestBody ToDo todo) {
+
+        //load user from database
+        user = userRepository.findByUsername(user.getUsername());
+        todo.setUser(user);
+        user.getToDos().add(todo);
+
+        userRepository.save(user);
+
+
+        ToDo todoRepsonse = toDoRepository.findByTaskAndUser(todo.getTask(), user);
 
         return new ResponseEntity<ToDo>(todoRepsonse, HttpStatus.OK);
     }
 
     @RequestMapping(value="", method = RequestMethod.GET)
-    public ResponseEntity<Collection<ToDo>> getTodos() {
-        List<ToDo> listOfToDos = toDoRepository.findAll();
-        return new ResponseEntity<Collection<ToDo>>(listOfToDos, HttpStatus.OK);
+    public ResponseEntity<Collection<ToDo>> getTodos(@AuthenticationPrincipal User user) {
+       // List<ToDo> listOfToDos = toDoRepository.findAll();
+        user = userRepository.findByUsername(user.getUsername());
+
+        Set<ToDo> setOfToDos = user.getToDos();
+        TreeSet<ToDo> sortedToDos = new TreeSet<ToDo>(setOfToDos);
+
+        return new ResponseEntity<Collection<ToDo>>(setOfToDos, HttpStatus.OK);
     }
 
     @RequestMapping(value = "{id}", method = RequestMethod.GET)

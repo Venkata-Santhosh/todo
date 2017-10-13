@@ -1,11 +1,18 @@
 package edu.syr.todo.entities;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
 
 @Entity
-public class ToDo {
+//@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "id")
+@JsonIgnoreProperties({"user"})
+public class ToDo implements Comparable<ToDo>{
 
     @Id
     @GeneratedValue
@@ -13,6 +20,9 @@ public class ToDo {
     private String task;
     private Boolean done;
     private Integer priority;
+
+    @ManyToOne
+    private User user;
 
     public Long getId() {
         return id;
@@ -44,5 +54,28 @@ public class ToDo {
 
     public void setPriority(Integer priority) {
         this.priority = priority;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    @Override
+    public int compareTo(ToDo toDo) {
+
+        int a = this.done.compareTo(toDo.getDone());
+        if (a == 0 ) {
+            a = this.priority.compareTo(toDo.getPriority());
+        }
+
+        if(a == 0) {
+            a =  this.id.compareTo(toDo.getId());
+        }
+        return a;
+
     }
 }
